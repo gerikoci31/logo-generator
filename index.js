@@ -1,13 +1,10 @@
 const fs = require('fs');
-const { JSDOM } = require('jsdom');
 const inquirer = require('inquirer');
-const chalk = require('chalk');
-const { createSVG, registerWindow } = require('@svgdotjs/svg.js');
-const { Triangle, Circle, Square } = require('./lib/shapes');
+const SVGBuilder = require('svg-builder');
 
+// Function to start the logo generation process
 async function generateLogo() {
-  console.log(chalk.blue.bold('Welcome to SVG Logo Maker'));
-
+  // Prompt for user input
   const userInput = await inquirer.prompt([
     {
       type: 'input',
@@ -18,7 +15,8 @@ async function generateLogo() {
     {
       type: 'input',
       name: 'textColor',
-      message: 'Enter text color (keyword or hex):',
+      message: 'Enter text color (keyword or hexadecimal):',
+      validate: input => /^#[0-9A-F]{6}$/i.test(input) || /^[a-z]+$/i.test(input),
     },
     {
       type: 'list',
@@ -29,63 +27,45 @@ async function generateLogo() {
     {
       type: 'input',
       name: 'shapeColor',
-      message: 'Enter shape color (keyword or hex):',
-    },
+      message: 'Enter shape color (keyword or hexadecimal):',
+      validate: input => /^#[0-9A-F]{6}$/i.test(input) || /^[a-z]+$/i.test(input),
+    }
   ]);
 
-  const { text, textColor, shape, shapeColor } = userInput;
+  
+  const svgContent = generateSVG(userInput);
 
-  // Create a virtual DOM using jsdom
-  const dom = new JSDOM();
-  const { document } = dom.window;
+  const fileName = 'logo.svg';
+  fs.writeFileSync(fileName, svgContent);
 
-  // Register the jsdom window with svg.js
-  registerWindow(document.defaultView, document);
-
-  // Initialize SVG.js
-  const svgCanvas = createSVG(document.documentElement);
-
-  // Create an SVG canvas
-  svgCanvas.size(300, 200);
-
-  // Draw text
-  svgCanvas.text(text)
-    .font({
-      family: 'Arial',
-      size: 48,
-      anchor: 'middle',
-      fill: textColor,
-    })
-    .move(150, 100);
-
-  // Draw shape based on user input
-  let shapeObj;
-  switch (shape) {
-    case 'circle':
-      shapeObj = new Circle(shapeColor);
-      break;
-    case 'triangle':
-      shapeObj = new Triangle(shapeColor);
-      break;
-    case 'square':
-      shapeObj = new Square(shapeColor);
-      break;
-    default:
-      console.log(chalk.red('Invalid shape selection.'));
-      return;
-  }
-
-  // Render the shape on SVG canvas
-  svgCanvas.add(shapeObj.render());
-
-  // Export SVG as markup
-  const svgMarkup = svgCanvas.svg();
-  fs.writeFileSync('logo.svg', svgMarkup);
-
-  console.log(chalk.green.bold('Generated logo.svg'));
+  console.log(`Generated ${fileName}`);
 }
 
-generateLogo().catch(error => {
-  console.error(chalk.red.bold('Error generating logo:'), error);
-  process.exit(1);
-});
+// Function to generate the SVG content based on user input
+function generateSVG({ text, textColor, shape, shapeColor }) {
+  const svg = new SVGBuilder();
+  
+  // Set SVG size
+  svg.setViewBox(0, 0, 300, 200);
+
+  // Draw shape based on user input
+  switch (shape) {
+    case 'circle':
+      svg.circle(150, 100, 50).fill(shapeColor);
+      break;
+    case 'triangle':
+      svg.polygon([[150, 50], [250, 150], [50, 150]]).fill(shapeColor);
+      break;
+    case 'square':
+      svg.rect(100, 50, 200, 100).fill(shapeColor);
+      break;
+    default:
+      break;
+  }
+
+  svg.text(150, 100, text).fill(textColor).font('Arial', 30, 'middle');
+
+  return svg.toString();
+}
+
+generateLogo();
