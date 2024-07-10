@@ -2,7 +2,7 @@
 Logo generator is a program that generates an svg image according to the user input
 
 Video
-Use the package manager pip to install foobar.
+https://drive.google.com/file/d/1hMoFKDojYB6lAoIznK6_kFwWBhU79_ne/view
 
 const fs = require('fs'); const inquirer = require('inquirer'); const SVGBuilder = require('svg-builder');
 
